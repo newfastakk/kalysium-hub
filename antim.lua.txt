@@ -1,0 +1,135 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- Configuration
+local Config = {
+    BhopEnabled = true,
+    SpeedEnabled = true,
+    MaxSpeed = 100,
+    SpeedMultiplier = 1.5,
+    JumpHeight = 50,
+    AirControl = 2
+}
+
+-- Anti-Aim Configuration
+local AAConfig = {
+    Enabled = true,
+    SpinSpeed = 360,
+    Jitter = true,
+    JitterRange = 60,
+    FakeLag = true,
+    FakeLagTicks = 5
+}
+
+-- Variables
+local currentSpeed = 16
+local aaAngle = 0
+local fakeLagCounter = 0
+local isGrounded = true
+
+-- Bhop and Speed Functions
+local function UpdateMovement(deltaTime)
+    if not Config.BhopEnabled and not Config.SpeedEnabled then return end
+    
+    local moveDirection = Humanoid.MoveDirection
+    local velocity = RootPart.Velocity
+    
+    isGrounded = Humanoid:GetState() == Enum.HumanoidStateType.Running or 
+                 Humanoid:GetState() == Enum.HumanoidStateType.Landed
+    
+    if Config.BhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) and isGrounded then
+        Humanoid.JumpPower = Config.JumpHeight
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        
+        if Config.SpeedEnabled then
+            currentSpeed = math.min(currentSpeed + (Config.SpeedMultiplier * deltaTime * 100), Config.MaxSpeed)
+            Humanoid.WalkSpeed = currentSpeed
+        end
+    end
+    
+    if not isGrounded and moveDirection.Magnitude > 0 then
+        local airVelocity = moveDirection * Config.AirControl * deltaTime * 100
+        RootPart.Velocity = Vector3.new(
+            velocity.X + airVelocity.X,
+            velocity.Y,
+            velocity.Z + airVelocity.Z
+        )
+    end
+end
+
+-- Anti-Aim Functions (Visual Only)
+local function UpdateAntiAim(deltaTime)
+    if not AAConfig.Enabled then return end
+    
+    -- Spin calculation
+    aaAngle = (aaAngle + AAConfig.SpinSpeed * deltaTime) % 360
+    
+    -- Jitter
+    local finalAngle = aaAngle
+    if AAConfig.Jitter then
+        finalAngle = finalAngle + math.random(-AAConfig.JitterRange, AAConfig.JitterRange)
+    end
+    
+    -- Apply visual rotation only to head (not affecting movement)
+    local head = Character:FindFirstChild("Head")
+    if head then
+        local lookVector = Vector3.new(math.sin(math.rad(finalAngle)), 0, math.cos(math.rad(finalAngle)))
+        head.CFrame = CFrame.new(head.Position, head.Position + lookVector)
+    end
+    
+    -- Fake lag simulation (visual only)
+    if AAConfig.FakeLag then
+        fakeLagCounter = fakeLagCounter + 1
+        if fakeLagCounter >= AAConfig.FakeLagTicks then
+            fakeLagCounter = 0
+            if head then
+                local fakeOffset = Vector3.new(math.sin(math.rad(finalAngle + 180)) * 2, 0, math.cos(math.rad(finalAngle + 180)) * 2)
+                head.CFrame = CFrame.new(RootPart.Position + Vector3.new(0, 2, 0) + fakeOffset, RootPart.Position + fakeOffset + lookVector)
+            end
+        end
+    end
+end
+
+-- Main Update Loop
+RunService.Heartbeat:Connect(function(deltaTime)
+    Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    if not Character then return end
+    
+    Humanoid = Character:FindFirstChild("Humanoid")
+    RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not Humanoid or not RootPart then return end
+    
+    UpdateMovement(deltaTime)
+    UpdateAntiAim(deltaTime)
+end)
+
+-- Reset speed on landing
+Humanoid.StateChanged:Connect(function(oldState, newState)
+    if newState == Enum.HumanoidStateType.Landed and Config.SpeedEnabled then
+        currentSpeed = 16
+        Humanoid.WalkSpeed = currentSpeed
+    end
+end)
+
+-- Handle character reset
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    Humanoid = Character:WaitForChild("Humanoid")
+    RootPart = Character:WaitForChild("HumanoidRootPart")
+    currentSpeed = 16
+    Humanoid.WalkSpeed = currentSpeed
+end)
+
+-- Toggle Anti-Aim with 'Q'
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Q then
+        AAConfig.Enabled = not AAConfig.Enabled
+        print("Anti-Aim " .. (AAConfig.Enabled and "Enabled" or "Disabled"))
+    end
+end)
