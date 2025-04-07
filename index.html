@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalysium Hub</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f2f2f7;
+            color: #000;
+            overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body.dark-theme {
+            background: #1c2526;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.5s;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-screen h1 {
+            font-size: 36px;
+            font-weight: 700;
+            color: #007aff;
+        }
+
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            opacity: 1;
+            transition: opacity 0.5s;
+        }
+
+        .login-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .login-screen input {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            width: 200px;
+            font-size: 16px;
+        }
+
+        .button {
+            background: #007aff;
+            color: #fff;
+            border-radius: 12px;
+            padding: 10px 20px;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .button:hover {
+            background: #005ecb;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        body.dark-theme .header {
+            background: rgba(0, 0, 0, 0.95);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        body.dark-theme .tabs {
+            background: rgba(0, 0, 0, 0.95);
+        }
+
+        .tab {
+            padding: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #007aff;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: #007aff;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        body.dark-theme .card {
+            background: #2c3e50;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: #666;
+            margin: 0 0 15px 0;
+        }
+
+        body.dark-theme .card p {
+            color: #ccc;
+        }
+
+        .profile-section input {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            width: 200px;
+            font-size: 16px;
+        }
+
+        .about-section a {
+            color: #007aff;
+            text-decoration: none;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #007aff;
+            color: #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .snowflake {
+            position: fixed;
+            color: #fff;
+            font-size: 1em;
+            font-family: Arial, sans-serif;
+            text-shadow: 0 0 5px #000;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        @keyframes fall {
+            0% { top: -10%; opacity: 1; }
+            100% { top: 110%; opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-screen" id="splashScreen">
+        <h1>Kalysium</h1>
+    </div>
+
+    <div class="login-screen" id="loginScreen">
+        <h2>Вход в Kalysium Hub</h2>
+        <input type="text" id="username" placeholder="Имя пользователя">
+        <input type="password" id="password" placeholder="Пароль">
+        <button class="button" onclick="login()">Войти</button>
+    </div>
+
+    <div class="container" id="mainContent" style="display: none;">
+        <div class="header">
+            <h1>Kalysium Hub</h1>
+            <button class="button" onclick="logout()">Выйти</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('files')">Files</div>
+            <div class="tab" onclick="showTab('profile')">Profile</div>
+            <div class="tab" onclick="showTab('about')">About Kalysium</div>
+        </div>
+
+        <div class="tab-content active" id="files">
+            <div class="card">
+                <h2>Kalysium HvH EXTERNAL</h2>
+                <p>Beta hvh scripts, no ban</p>
+                <button class="button" onclick="downloadFiles()">Download</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="profile">
+            <div class="card profile-section">
+                <h2>Настройки профиля</h2>
+                <input type="text" id="profileName" placeholder="Новое имя">
+                <button class="button" onclick="updateProfile()">Сохранить</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="about">
+            <div class="card about-section">
+                <h2>About Kalysium</h2>
+                <p>Kalysium is Roblox cheat, secured, and no banneble.<br>Is legit and rage.<br>Thanks for using!</p>
+                <p><a href="https://t.me/+CA740dvnnQY3NTk0" target="_blank">Kalysium Telegram</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="theme-toggle" onclick="toggleTheme()">🌙</div>
+
+    <script>
+        // Splash screen
+        setTimeout(() => {
+            document.getElementById('splashScreen').classList.add('hidden');
+            checkLogin();
+        }, 2000);
+
+        // Login system
+        function checkLogin() {
+            const user = localStorage.getItem('username');
+            if (user) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainContent').style.display = 'block';
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (username && password) {
+                localStorage.setItem('username', username);
+                localStorage.setItem('ip', '192.168.1.1'); // Имитация IP
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainContent').style.display = 'block';
+            } else {
+                alert('Введите имя пользователя и пароль!');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('username');
+            localStorage.removeItem('ip');
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        // Tabs
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+        }
+
+        // Download files
+        function downloadFiles() {
+            const files = [
+                'https://raw.githubusercontent.com/newfastakk/kalysium-hub/main/aimlua%20(1).lua',
+                'https://raw.githubusercontent.com/newfastakk/kalysium-hub/main/antim.lua.txt',
+                'https://raw.githubusercontent.com/newfastakk/kalysium-hub/main/esp.lua',
+                'https://raw.githubusercontent.com/newfastakk/kalysium-hub/main/thirdp.lua'
+            ];
+            files.forEach(file => {
+                const link = document.createElement('a');
+                link.href = file;
+                link.download = file.split('/').pop();
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        // Profile update
+        function updateProfile() {
+            const newName = document.getElementById('profileName').value;
+            if (newName) {
+                localStorage.setItem('username', newName);
+                alert('Имя обновлено!');
+            } else {
+                alert('Введите новое имя!');
+            }
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            const toggleButton = document.querySelector('.theme-toggle');
+            toggleButton.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
+        }
+
+        // Snowflakes
+        function createSnowflake() {
+            const snowflake = document.createElement('div');
+            snowflake.classList.add('snowflake');
+            snowflake.innerHTML = '❄';
+            snowflake.style.left = Math.random() * 100 + 'vw';
+            snowflake.style.animationDuration = Math.random() * 5 + 5 + 's';
+            snowflake.style.opacity = Math.random();
+            document.body.appendChild(snowflake);
+            setTimeout(() => snowflake.remove(), 10000);
+        }
+
+        setInterval(createSnowflake, 200);
+    </script>
+</body>
+</html>
